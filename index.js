@@ -36,7 +36,7 @@ function verifyJWT(req, res, next){
   });
 }
 
-  const emailSenderOptions = {
+const emailSenderOptions = {
     auth: {
       api_key: process.env.EMAIL_SENDER_KEY
     }
@@ -73,6 +73,7 @@ function sendAppointmentEmail(booking){
 }
 function sendPaymentConfirmationEmail(booking){
   const {patient, patientName, treatment, date, slot} = booking;
+  //console.log(booking)
   var email = {
     from: process.env.EMAIL_SENDER,
     to: patient,
@@ -97,7 +98,7 @@ function sendPaymentConfirmationEmail(booking){
     else {
       console.log('Message sent: ' , info);
     }
-  });
+  }); 
 }
 
 
@@ -173,7 +174,6 @@ async function run(){
           const query= {_id: ObjectId(id)};
           const booking = await bookingCollection.findOne(query);
           res.send(booking);
-
         })
 
         app.patch('/booking/:id', verifyJWT, async(req,res)=>{
@@ -188,7 +188,8 @@ async function run(){
           }
           const result = await paymentCollection.insertOne(payment);
           const updatedBooking = await bookingCollection.updateOne(filter, updatedDoc);
-
+          const booking = await bookingCollection.findOne(filter);
+          sendPaymentConfirmationEmail(booking);
           res.send(updatedDoc)
         })
 
@@ -211,7 +212,7 @@ async function run(){
           const users = await userCollection.find().toArray();
           res.send(users);
         });
-        app.get('/admin/:email', async(req,res)=>{
+        app.get('/admin/:email',verifyJWT, async(req,res)=>{
           const email = req.params.email;
           const user = await userCollection.findOne({email:email})
           const isAdmin = user.role ==='admin';
